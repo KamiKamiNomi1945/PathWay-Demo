@@ -1,311 +1,109 @@
 <!doctype html>
-<html lang="da">
+<html lang="en">
 <head>
-  <!-- ====== Basic Page Setup ====== -->
-  <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
-  <title>AR Demo</title>
-
-  <!--
-    model-viewer er et webkomponent-bibliotek fra Google, som gør det muligt
-    at vise 3D/AR med et HTML-tag. Dette er den eneste "afhængighed".
-  -->
-  <script
-    type="module"
-    src="https://unpkg.com/@google/model-viewer@3.3.0/dist/model-viewer.min.js"
-  ></script>
-
-  <!-- ====== Styles (holdt simple og tydelige) ====== -->
-  <style>
-    :root {
-      --bg: #111;
-      --fg: #fff;
-      --muted: rgba(255, 255, 255, 0.8);
-      --pad: 16px;
-      --gap: 8px;
-      --font: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    /* Nulstil margin og lav et simpelt grid-layout: header | main | footer */
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
-
-    body {
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      font-family: var(--font);
-      color: var(--fg);
-      background: var(--bg);
-    }
-
-    /* Fælles bar-styling (header og footer) */
-    header, footer {
-      padding: 12px var(--pad);
-      display: flex;
-      align-items: center;
-      gap: var(--gap);
-      flex-wrap: wrap;
-      background: #000; /* let afvigelse fra baggrunden */
-    }
-
-    /* Wrapper omkring model-viewer, så den centreres pænt */
-    #viewer-wrap {
-      display: grid;
-      place-items: center;
-      background: var(--bg);
-    }
-
-    /* Selve 3D/AR-vinduet. 50% bredde for at give plads til UI på desktop. */
-    /* Det skalerer automatisk til 100% i højden. */
-    model-viewer {
-      width: 50%;
-      height: 100%;
-      background: var(--bg);
-      /* For små skærme må det gerne fylde hele bredden */
-      max-width: 100%;
-    }
-
-    /* Små hjælpetekster */
-    .hint {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    /* Simpel vandret værktøjslinje */
-    .bar {
-      display: flex;
-      gap: var(--gap);
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    /* Inputfeltet må gerne være bredt, men ikke for bredt på små skærme */
-    input[type="text"] {
-      width: min(480px, 90vw);
-      padding: 8px 10px;
-      border-radius: 6px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: var(--fg);
-    }
-
-    button {
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #333;
-      background: #1f1f1f;
-      color: var(--fg);
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #2a2a2a;
-    }
-
-    /* Status-tekst i bunden */
-    #status {
-      min-height: 1em; /* undgår layout-hop når tekst kommer/forsvinder */
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WebXR AR – World-Locked Objects (Fixed)</title>
+<style>
+  html,body { margin:0; height:100%; background:#000; color:#fff; font:14px system-ui,sans-serif; }
+  #hud { position:fixed; left:12px; bottom:12px; padding:8px 10px; background:rgba(0,0,0,.5); border:1px solid #333; border-radius:8px; z-index:10; }
+  canvas { display:block; }
+  #msg { position:fixed; inset:0; display:grid; place-items:center; padding:24px; text-align:center; background:#000; color:#fff; }
+  #msg.hide { display:none; }
+</style>
 </head>
-
 <body>
-  <!-- ====== Header ====== -->
-  <header class="bar" role="banner">
-    <strong>AR Demo</strong>
-    <span class="hint">Tip: På Android/Chrome trykker du “View in your space”.</span>
-  </header>
+<div id="hud">Move and rotate. Objects should stay fixed in the room.</div>
+<div id="msg" class="hide"></div>
 
-  <!-- ====== Main / Viewer ====== -->
-  <main id="viewer-wrap" role="main" aria-label="3D/AR fremviser">
-    <!--
-      Standardmodel (Astronaut). Denne skiftes automatisk, hvis der findes
-      URL-parametre: ?model=https://.../fil.glb og evt. ?usdz=https://.../fil.usdz
+<!-- Use ES modules (correct for examples/jsm) -->
+<script type="module">
+  import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+  import { ARButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js';
 
-      Bemærk:
-      - Android/Chrome: GLB via WebXR/Scene Viewer
-      - iOS/Safari: USDZ via Quick Look (ios-src)
-    -->
-    <model-viewer
-      id="mv"
-      src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
-      ios-src="https://modelviewer.dev/shared-assets/models/Astronaut.usdz"
-      ar
-      ar-modes="webxr scene-viewer quick-look"
-      ar-placement="floor"
-      ar-scale="fixed"
-      camera-controls
-      auto-rotate
-      exposure="0.2"
-      environment-image="neutral"
-      poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' fill='%23aaa' font-size='32' text-anchor='middle' dominant-baseline='middle'%3EIndl%C3%A6ser model...%3C/text%3E%3C/svg%3E"
-    >
-      <!-- AR-knappen og UI-elementer indsættes automatisk af model-viewer -->
-    </model-viewer>
-  </main>
+  const msg = document.getElementById('msg');
 
-  <!-- ====== Footer / Kontrolpanel ====== -->
-  <footer class="bar" role="contentinfo">
-    <label class="hint" for="url">
-      Indlæs en anden model (GLB URL):
-    </label>
-
-    <input
-      id="url"
-      type="text"
-      placeholder="https://.../din-model.glb"
-      inputmode="url"
-      aria-label="Adresse til GLB-model"
-    />
-
-    <button id="load" type="button" aria-label="Indlæs model fra adressen">
-      Indlæs
-    </button>
-
-    <button id="makeLink" type="button" aria-label="Lav delbart link til denne model">
-      Lav delbar link
-    </button>
-
-    <span id="status" class="hint" aria-live="polite"></span>
-  </footer>
-
-  <!-- ====== Script (enkelt og selvforklarende) ====== -->
-  <script type="module">
-    // ------------------------------------------------------------
-    // Element-referencer (samlet øverst for overblik)
-    // ------------------------------------------------------------
-    const mvEl    = document.getElementById("mv");
-    const urlEl   = document.getElementById("url");
-    const statusEl = document.getElementById("status");
-    const loadBtn  = document.getElementById("load");
-    const linkBtn  = document.getElementById("makeLink");
-
-    // ------------------------------------------------------------
-    // Hjælpefunktioner
-    // ------------------------------------------------------------
-
-    /**
-     * Sætter status-tekst nederst på siden.
-     * Brug aria-live på #status, så skærmlæsere også får besked.
-     */
-    function setStatus(message) {
-      statusEl.textContent = message || "";
+  // Quick capability check to avoid “mysterious black”
+  async function ensureARSupport() {
+    if (!('xr' in navigator)) {
+      throw new Error('This browser has no WebXR API. Try Chrome on Android.');
     }
-
-    /**
-     * Henter query-parametre fra URL’en.
-     * Returnerer et praktisk objekt, fx { model: "...", usdz: "..." }
-     */
-    function getQueryParams() {
-      const params = new URLSearchParams(window.location.search);
-      return {
-        model: params.get("model"),
-        usdz: params.get("usdz"),
-      };
+    const ok = await navigator.xr.isSessionSupported('immersive-ar');
+    if (!ok) {
+      throw new Error('WebXR AR not supported. Use Chrome on Android with a compatible device.');
     }
+  }
 
-    /**
-     * Indlæser en model-URL i <model-viewer>.
-     * Validerer input (kun tomt-check) og viser status.
-     */
-    function loadModel(urlString) {
-      const trimmed = (urlString || "").trim();
-      if (!trimmed) return;
+  try {
+    await ensureARSupport();
+  } catch (e) {
+    msg.textContent = e.message;
+    msg.classList.remove('hide');
+    throw e; // stop here
+  }
 
-      try {
-        // Hvis det ikke er en gyldig URL, kaster new URL en fejl.
-        // (Dette er mest en venlighed; model-viewer kræver blot en streng.)
-        new URL(trimmed);
-        mvEl.src = trimmed;
-        setStatus("Indlæser...");
-      } catch {
-        // Hvis brugeren indtaster noget, der ikke ligner en URL, informér.
-        setStatus("Ugyldig URL. Tjek adressen og prøv igen.");
-      }
-    }
+  // --- Three.js scene/camera/renderer ---
+  const scene = new THREE.Scene();
 
-    /**
-     * Danner et delbart link, som bevarer den nuværende model-URL.
-     * Eksempel: https://domæne.tld/sti/index.html?model=<currentSrc>
-     */
-    function buildShareLink() {
-      const base = window.location.origin + window.location.pathname;
-      const params = new URLSearchParams();
+  const camera = new THREE.PerspectiveCamera();
+  scene.add(camera);
 
-      // Brug den aktuelle mvEl.src (som kan være sat via input eller query)
-      if (mvEl.src) params.set("model", mvEl.src);
+  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.xr.enabled = true;
+  // IMPORTANT: request a world-locked reference space
+  renderer.xr.setReferenceSpaceType('local-floor');
+  document.body.appendChild(renderer.domElement);
 
-      // iOS-specifik USDZ (hvis sat i forvejen via query)
-      const maybeUsdZ = mvEl.getAttribute("ios-src");
-      if (maybeUsdZ) params.set("usdz", maybeUsdZ);
+  // Lights
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+  sun.position.set(1, 2, 1);
+  scene.add(sun);
 
-      return `${base}?${params.toString()}`;
-    }
+  // --- World objects (fixed positions/rotations) ---
+  function box(size, color) {
+    return new THREE.Mesh(
+      new THREE.BoxGeometry(size, size, size),
+      new THREE.MeshStandardMaterial({ color })
+    );
+  }
+  function torus(R, r, color) {
+    return new THREE.Mesh(
+      new THREE.TorusGeometry(R, r, 16, 64),
+      new THREE.MeshStandardMaterial({ color })
+    );
+  }
 
-    /**
-     * Kopierer en tekst til udklipsholderen på en pæn måde.
-     */
-    async function copyToClipboard(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        setStatus("Link kopieret! Indsæt det i din QR-kode.");
-      } catch {
-        setStatus("Kunne ikke kopiere link. Kopiér manuelt fra adresselinjen.");
-      }
-    }
+  const cube = box(0.2, 0x00ffff);
+  cube.position.set(0, 0.2, -1.0);        // 1 m in front, 20 cm up
+  cube.rotation.set(0, Math.PI/4, 0);     // 45° around Y
+  scene.add(cube);
 
-    // ------------------------------------------------------------
-    // Initialisering (læser ?model= og ?usdz= fra URL, hvis de findes)
-    // ------------------------------------------------------------
-    (function initFromQuery() {
-      const { model, usdz } = getQueryParams();
+  const ring = torus(0.15, 0.05, 0xff0088);
+  ring.position.set(-1.5, 0.4, -2.0);     // 1.5 m left, 2 m forward, 40 cm up
+  ring.rotation.set(Math.PI/2, 0, 0);     // 90° around X
+  scene.add(ring);
 
-      // Hvis der er ?model=... så brug den som src
-      if (model) {
-        mvEl.src = model;
-      }
+  // --- Start AR session with local-floor ---
+  const sessionInit = {
+    requiredFeatures: ['local-floor'] // world-locked origin at floor level
+    // optionalFeatures: ['anchors']  // enable if you later add anchors
+  };
 
-      // Hvis der er ?usdz=... så sæt iOS-kilde
-      if (usdz) {
-        mvEl.setAttribute("ios-src", usdz);
-      }
-    })();
+  document.body.appendChild(ARButton.createButton(renderer, sessionInit));
 
-    // ------------------------------------------------------------
-    // Event handlers (enkle, navngivne, og med statusopdateringer)
-    // ------------------------------------------------------------
+  // Render loop
+  renderer.setAnimationLoop((_time, frame) => {
+    // Tiny animation to prove world-locking
+    ring.rotation.z += 0.01;
+    renderer.render(scene, camera);
+  });
 
-    // 1) Indlæs-knap: brug indholdet i tekstfeltet
-    loadBtn.addEventListener("click", () => {
-      loadModel(urlEl.value);
-    });
-
-    // 2) Delbart link: byg linket ud fra aktuel model og kopier
-    linkBtn.addEventListener("click", () => {
-      const link = buildShareLink();
-      copyToClipboard(link);
-    });
-
-    // 3) model-viewer events: giv brugeren lidt feedback
-    mvEl.addEventListener("load", () => {
-      setStatus("Model klar ✔︎");
-    });
-
-    mvEl.addEventListener("error", () => {
-      setStatus("Kunne ikke indlæse modellen (tjek URL/HTTPS/CORS).");
-    });
-
-    // Valgfrit: ENTER i inputfeltet svarer til at trykke "Indlæs"
-    urlEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        loadModel(urlEl.value);
-      }
-    });
-  </script>
+  addEventListener('resize', () => {
+    renderer.setSize(innerWidth, innerHeight);
+  });
+</script>
 </body>
 </html>
