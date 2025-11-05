@@ -1,126 +1,311 @@
 <!doctype html>
 <html lang="da">
 <head>
+  <!-- ====== Basic Page Setup ====== -->
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WebXR AR – Faste positioner</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>AR Demo</title>
 
-  <!-- three.js (sen r15x+ virker fint) -->
-  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js"></script>
+  <!--
+    model-viewer er et webkomponent-bibliotek fra Google, som gør det muligt
+    at vise 3D/AR med et HTML-tag. Dette er den eneste "afhængighed".
+  -->
+  <script
+    type="module"
+    src="https://unpkg.com/@google/model-viewer@3.3.0/dist/model-viewer.min.js"
+  ></script>
 
+  <!-- ====== Styles (holdt simple og tydelige) ====== -->
   <style>
-    html,body { margin:0; height:100%; background:#000; color:#fff; font:14px/1.4 system-ui,sans-serif; }
-    #hud { position:fixed; left:12px; bottom:12px; padding:8px 10px; background:rgba(0,0,0,.5); border:1px solid #333; border-radius:8px; }
-    #start { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); padding:12px 16px; font-size:16px; }
-    canvas { display:block; } /* three.js canvas */
+    :root {
+      --bg: #111;
+      --fg: #fff;
+      --muted: rgba(255, 255, 255, 0.8);
+      --pad: 16px;
+      --gap: 8px;
+      --font: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* Nulstil margin og lav et simpelt grid-layout: header | main | footer */
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      font-family: var(--font);
+      color: var(--fg);
+      background: var(--bg);
+    }
+
+    /* Fælles bar-styling (header og footer) */
+    header, footer {
+      padding: 12px var(--pad);
+      display: flex;
+      align-items: center;
+      gap: var(--gap);
+      flex-wrap: wrap;
+      background: #000; /* let afvigelse fra baggrunden */
+    }
+
+    /* Wrapper omkring model-viewer, så den centreres pænt */
+    #viewer-wrap {
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+    }
+
+    /* Selve 3D/AR-vinduet. 50% bredde for at give plads til UI på desktop. */
+    /* Det skalerer automatisk til 100% i højden. */
+    model-viewer {
+      width: 50%;
+      height: 100%;
+      background: var(--bg);
+      /* For små skærme må det gerne fylde hele bredden */
+      max-width: 100%;
+    }
+
+    /* Små hjælpetekster */
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Simpel vandret værktøjslinje */
+    .bar {
+      display: flex;
+      gap: var(--gap);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Inputfeltet må gerne være bredt, men ikke for bredt på små skærme */
+    input[type="text"] {
+      width: min(480px, 90vw);
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: var(--fg);
+    }
+
+    button {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #1f1f1f;
+      color: var(--fg);
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2a2a2a;
+    }
+
+    /* Status-tekst i bunden */
+    #status {
+      min-height: 1em; /* undgår layout-hop når tekst kommer/forsvinder */
+    }
   </style>
 </head>
-<body>
-  <!-- Trech info nederst -->
-  <div id="hud">Gå rundt. Objekter er låst til verdensrummet.</div>
-  <!-- AR start-knap (indsættes/forbedres af ARButton) -->
-  <button id="start">Start AR</button>
 
+<body>
+  <!-- ====== Header ====== -->
+  <header class="bar" role="banner">
+    <strong>AR Demo</strong>
+    <span class="hint">Tip: På Android/Chrome trykker du “View in your space”.</span>
+  </header>
+
+  <!-- ====== Main / Viewer ====== -->
+  <main id="viewer-wrap" role="main" aria-label="3D/AR fremviser">
+    <!--
+      Standardmodel (Astronaut). Denne skiftes automatisk, hvis der findes
+      URL-parametre: ?model=https://.../fil.glb og evt. ?usdz=https://.../fil.usdz
+
+      Bemærk:
+      - Android/Chrome: GLB via WebXR/Scene Viewer
+      - iOS/Safari: USDZ via Quick Look (ios-src)
+    -->
+    <model-viewer
+      id="mv"
+      src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+      ios-src="https://modelviewer.dev/shared-assets/models/Astronaut.usdz"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      ar-placement="floor"
+      ar-scale="fixed"
+      camera-controls
+      auto-rotate
+      exposure="0.2"
+      environment-image="neutral"
+      poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' fill='%23aaa' font-size='32' text-anchor='middle' dominant-baseline='middle'%3EIndl%C3%A6ser model...%3C/text%3E%3C/svg%3E"
+    >
+      <!-- AR-knappen og UI-elementer indsættes automatisk af model-viewer -->
+    </model-viewer>
+  </main>
+
+  <!-- ====== Footer / Kontrolpanel ====== -->
+  <footer class="bar" role="contentinfo">
+    <label class="hint" for="url">
+      Indlæs en anden model (GLB URL):
+    </label>
+
+    <input
+      id="url"
+      type="text"
+      placeholder="https://.../din-model.glb"
+      inputmode="url"
+      aria-label="Adresse til GLB-model"
+    />
+
+    <button id="load" type="button" aria-label="Indlæs model fra adressen">
+      Indlæs
+    </button>
+
+    <button id="makeLink" type="button" aria-label="Lav delbart link til denne model">
+      Lav delbar link
+    </button>
+
+    <span id="status" class="hint" aria-live="polite"></span>
+  </footer>
+
+  <!-- ====== Script (enkelt og selvforklarende) ====== -->
   <script type="module">
     // ------------------------------------------------------------
-    // Scene, kamera og renderer
+    // Element-referencer (samlet øverst for overblik)
     // ------------------------------------------------------------
-    const scene = new THREE.Scene();
-
-    // Kameraet styres af WebXR; vi sætter stadig et kamera-objekt op:
-    const camera = new THREE.PerspectiveCamera();
-    scene.add(camera);
-
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.xr.enabled = true; // vigtig for WebXR
-    document.body.appendChild(renderer.domElement);
-
-    // En smule lys, så vi kan se noget
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-    dir.position.set(1, 2, 1);
-    scene.add(dir);
+    const mvEl    = document.getElementById("mv");
+    const urlEl   = document.getElementById("url");
+    const statusEl = document.getElementById("status");
+    const loadBtn  = document.getElementById("load");
+    const linkBtn  = document.getElementById("makeLink");
 
     // ------------------------------------------------------------
-    // Faste verdens-objekter (position + rotation)
-    // Verdens-aksen er i meter. Z negativ = "foran" oprindelsen.
-    // Oprindelsen (0,0,0) vælges når AR-sessionen starter.
+    // Hjælpefunktioner
     // ------------------------------------------------------------
-    function makeBox(size=0.2, color=0x00ffff) {
-      const geo = new THREE.BoxGeometry(size, size, size);
-      const mat = new THREE.MeshStandardMaterial({ color });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.castShadow = mesh.receiveShadow = true;
-      return mesh;
+
+    /**
+     * Sætter status-tekst nederst på siden.
+     * Brug aria-live på #status, så skærmlæsere også får besked.
+     */
+    function setStatus(message) {
+      statusEl.textContent = message || "";
     }
 
-    function makeTorus(r=0.15, t=0.05, color=0xff00ff) {
-      const geo = new THREE.TorusGeometry(r, t, 16, 64);
-      const mat = new THREE.MeshStandardMaterial({ color });
-      return new THREE.Mesh(geo, mat);
+    /**
+     * Henter query-parametre fra URL’en.
+     * Returnerer et praktisk objekt, fx { model: "...", usdz: "..." }
+     */
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        model: params.get("model"),
+        usdz: params.get("usdz"),
+      };
     }
 
-    // Objekt A: en kasse 1 meter foran startpunktet, 0.2 m oppe, vredet 45° om Y
-    const box = makeBox(0.2, 0x00ffff);
-    box.position.set(0, 0.2, -1.0);
-    box.rotation.set(0, Math.PI / 4, 0); // Euler (X,Y,Z)
-    scene.add(box);
+    /**
+     * Indlæser en model-URL i <model-viewer>.
+     * Validerer input (kun tomt-check) og viser status.
+     */
+    function loadModel(urlString) {
+      const trimmed = (urlString || "").trim();
+      if (!trimmed) return;
 
-    // Objekt B: en donut 1.5 m til venstre, 0.4 m oppe, 2 m fremme, 90° om X
-    const torus = makeTorus(0.15, 0.05, 0xff0088);
-    torus.position.set(-1.5, 0.4, -2.0);
-    torus.rotation.set(Math.PI / 2, 0, 0);
-    scene.add(torus);
+      try {
+        // Hvis det ikke er en gyldig URL, kaster new URL en fejl.
+        // (Dette er mest en venlighed; model-viewer kræver blot en streng.)
+        new URL(trimmed);
+        mvEl.src = trimmed;
+        setStatus("Indlæser...");
+      } catch {
+        // Hvis brugeren indtaster noget, der ikke ligner en URL, informér.
+        setStatus("Ugyldig URL. Tjek adressen og prøv igen.");
+      }
+    }
 
-    // (Valgfrit) Et lille gulvgrid til debug (vises ikke i AR kamera-feedet)
-    // const grid = new THREE.GridHelper(10, 10);
-    // scene.add(grid);
+    /**
+     * Danner et delbart link, som bevarer den nuværende model-URL.
+     * Eksempel: https://domæne.tld/sti/index.html?model=<currentSrc>
+     */
+    function buildShareLink() {
+      const base = window.location.origin + window.location.pathname;
+      const params = new URLSearchParams();
+
+      // Brug den aktuelle mvEl.src (som kan være sat via input eller query)
+      if (mvEl.src) params.set("model", mvEl.src);
+
+      // iOS-specifik USDZ (hvis sat i forvejen via query)
+      const maybeUsdZ = mvEl.getAttribute("ios-src");
+      if (maybeUsdZ) params.set("usdz", maybeUsdZ);
+
+      return `${base}?${params.toString()}`;
+    }
+
+    /**
+     * Kopierer en tekst til udklipsholderen på en pæn måde.
+     */
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus("Link kopieret! Indsæt det i din QR-kode.");
+      } catch {
+        setStatus("Kunne ikke kopiere link. Kopiér manuelt fra adresselinjen.");
+      }
+    }
 
     // ------------------------------------------------------------
-    // AR session start – reference space og render loop
+    // Initialisering (læser ?model= og ?usdz= fra URL, hvis de findes)
     // ------------------------------------------------------------
-    // Vi beder om 'local-floor', så gulvniveau estimeres.
-    const sessionInit = { requiredFeatures: ['local-floor'] };
+    (function initFromQuery() {
+      const { model, usdz } = getQueryParams();
 
-    // Start-knap via three.js’ ARButton (erstatter vores #start)
-    const startBtn = document.getElementById('start');
-    startBtn.replaceWith(THREE.ARButton.createButton(renderer, sessionInit));
+      // Hvis der er ?model=... så brug den som src
+      if (model) {
+        mvEl.src = model;
+      }
 
-    // Render-loop for XR
-    renderer.setAnimationLoop((time, frame) => {
-      // Her kunne man opdatere ankre/poses, hvis anchors bruges.
-      // Vores objekter ligger allerede i verdensrummet, så vi tegner bare.
-      torus.rotation.z += 0.01; // lille animation
-      renderer.render(scene, camera);
+      // Hvis der er ?usdz=... så sæt iOS-kilde
+      if (usdz) {
+        mvEl.setAttribute("ios-src", usdz);
+      }
+    })();
+
+    // ------------------------------------------------------------
+    // Event handlers (enkle, navngivne, og med statusopdateringer)
+    // ------------------------------------------------------------
+
+    // 1) Indlæs-knap: brug indholdet i tekstfeltet
+    loadBtn.addEventListener("click", () => {
+      loadModel(urlEl.value);
     });
 
-    // Håndter resize
-    window.addEventListener('resize', () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
+    // 2) Delbart link: byg linket ud fra aktuel model og kopier
+    linkBtn.addEventListener("click", () => {
+      const link = buildShareLink();
+      copyToClipboard(link);
     });
 
-    // ------------------------------------------------------------
-    // (Avanceret/fremtidigt) Anchors:
-    // Hvis browseren understøtter WebXR Anchors, kan du "låse" objekter ekstra
-    // robust til miljøet. Det kræver typisk:
-    //
-    // 1) sessionInit.requiredFeatures.push('anchors')
-    // 2) inde i animation loop:
-    //      const xr = renderer.xr.getSession();
-    //      const refSpace = renderer.xr.getReferenceSpace();
-    //      const xrFrame = renderer.xr.getFrame();
-    //      const rigid = new XRRigidTransform(box.position, new DOMPointReadOnly(
-    //        0, 0, 0, 1  // quaternion (w sidste)
-    //      ));
-    //      const anchor = xrFrame.createAnchor(rigid, refSpace);
-    //      // derefter læs pose via anchor.anchorSpace for at opdatere objektet.
-    //
-    // Det er ikke nødvendigt for at have objekter "ikke-relative til kameraet",
-    // men kan give mere stabil låsning i rummet.
-    // ------------------------------------------------------------
+    // 3) model-viewer events: giv brugeren lidt feedback
+    mvEl.addEventListener("load", () => {
+      setStatus("Model klar ✔︎");
+    });
+
+    mvEl.addEventListener("error", () => {
+      setStatus("Kunne ikke indlæse modellen (tjek URL/HTTPS/CORS).");
+    });
+
+    // Valgfrit: ENTER i inputfeltet svarer til at trykke "Indlæs"
+    urlEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        loadModel(urlEl.value);
+      }
+    });
   </script>
 </body>
 </html>
