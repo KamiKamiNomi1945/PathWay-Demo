@@ -3,50 +3,72 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>WebXR AR – World-Locked Objects</title>
-
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js"></script>
-
+<title>WebXR AR – World-Locked Objects (Fixed)</title>
 <style>
   html,body { margin:0; height:100%; background:#000; color:#fff; font:14px system-ui,sans-serif; }
-  #hud { position:fixed; left:12px; bottom:12px; padding:8px 10px; background:rgba(0,0,0,.5); border:1px solid #333; border-radius:8px; }
+  #hud { position:fixed; left:12px; bottom:12px; padding:8px 10px; background:rgba(0,0,0,.5); border:1px solid #333; border-radius:8px; z-index:10; }
   canvas { display:block; }
+  #msg { position:fixed; inset:0; display:grid; place-items:center; padding:24px; text-align:center; background:#000; color:#fff; }
+  #msg.hide { display:none; }
 </style>
 </head>
 <body>
 <div id="hud">Move and rotate. Objects should stay fixed in the room.</div>
+<div id="msg" class="hide"></div>
 
+<!-- Use ES modules (correct for examples/jsm) -->
 <script type="module">
-  // ----- Three.js setup -----
+  import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+  import { ARButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js';
+
+  const msg = document.getElementById('msg');
+
+  // Quick capability check to avoid “mysterious black”
+  async function ensureARSupport() {
+    if (!('xr' in navigator)) {
+      throw new Error('This browser has no WebXR API. Try Chrome on Android.');
+    }
+    const ok = await navigator.xr.isSessionSupported('immersive-ar');
+    if (!ok) {
+      throw new Error('WebXR AR not supported. Use Chrome on Android with a compatible device.');
+    }
+  }
+
+  try {
+    await ensureARSupport();
+  } catch (e) {
+    msg.textContent = e.message;
+    msg.classList.remove('hide');
+    throw e; // stop here
+  }
+
+  // --- Three.js scene/camera/renderer ---
   const scene = new THREE.Scene();
 
   const camera = new THREE.PerspectiveCamera();
-  scene.add(camera); // ok: camera is in scene, but we won’t parent objects to it.
+  scene.add(camera);
 
   const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.xr.enabled = true;
-
-  // CRITICAL: ask three.js to use a world-locked reference space
-  renderer.xr.setReferenceSpaceType('local-floor');  // <-- important
+  // IMPORTANT: request a world-locked reference space
+  renderer.xr.setReferenceSpaceType('local-floor');
   document.body.appendChild(renderer.domElement);
 
-  // simple lighting
+  // Lights
   scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
   const sun = new THREE.DirectionalLight(0xffffff, 0.6);
   sun.position.set(1, 2, 1);
   scene.add(sun);
 
-  // ----- World objects (fixed positions/rotations in meters) -----
+  // --- World objects (fixed positions/rotations) ---
   function box(size, color) {
     return new THREE.Mesh(
       new THREE.BoxGeometry(size, size, size),
       new THREE.MeshStandardMaterial({ color })
     );
   }
-
   function torus(R, r, color) {
     return new THREE.Mesh(
       new THREE.TorusGeometry(R, r, 16, 64),
@@ -54,79 +76,28 @@
     );
   }
 
-  // Place them in world space relative to the session origin (chosen at start)
   const cube = box(0.2, 0x00ffff);
-  cube.position.set(0, 0.2, -1.0);           // 1 m in front, 20 cm up
-  cube.rotation.set(0, Math.PI/4, 0);        // 45° around Y
+  cube.position.set(0, 0.2, -1.0);        // 1 m in front, 20 cm up
+  cube.rotation.set(0, Math.PI/4, 0);     // 45° around Y
   scene.add(cube);
 
   const ring = torus(0.15, 0.05, 0xff0088);
-  ring.position.set(-1.5, 0.4, -2.0);        // 1.5 m left, 2 m forward, 40 cm up
-  ring.rotation.set(Math.PI/2, 0, 0);        // 90° around X
+  ring.position.set(-1.5, 0.4, -2.0);     // 1.5 m left, 2 m forward, 40 cm up
+  ring.rotation.set(Math.PI/2, 0, 0);     // 90° around X
   scene.add(ring);
 
-  // ----- Start AR session -----
+  // --- Start AR session with local-floor ---
   const sessionInit = {
-    requiredFeatures: ['local-floor'],
-    // optionalFeatures: ['anchors'] // enable if you want anchors (see below)
+    requiredFeatures: ['local-floor'] // world-locked origin at floor level
+    // optionalFeatures: ['anchors']  // enable if you later add anchors
   };
 
-  document.body.appendChild(THREE.ARButton.createButton(renderer, sessionInit));
+  document.body.appendChild(ARButton.createButton(renderer, sessionInit));
 
-  // OPTIONAL: Anchors (more robust world-locking when supported)
-  let xrSession = null;
-  let xrRefSpace = null;
-
-  renderer.xr.addEventListener('sessionstart', async () => {
-    xrSession = renderer.xr.getSession();
-    xrRefSpace = renderer.xr.getReferenceSpace();
-
-    // If you want to lock, try anchors (requires 'anchors' optional/required feature):
-    // if (xrSession?.requestReferenceSpace && xrSession?.requestHitTestSource) { ... }
-    // Simpler: create anchors at known poses (if feature available)
-    // if (xrSession?.features?.has('anchors')) {  // non-standard, guarded anyway
-    //   const frame = renderer.xr.getFrame();
-    //   if (frame && xrRefSpace) {
-    //     // Create anchor for cube
-    //     const tCube = new XRRigidTransform(
-    //       { x: cube.position.x, y: cube.position.y, z: cube.position.z, w: 1 },
-    //       { x: 0, y: Math.sin(Math.PI/8), z: 0, w: Math.cos(Math.PI/8) } // 45° Y as quaternion
-    //     );
-    //     const anchorCube = await frame.createAnchor(tCube, xrRefSpace);
-    //     cube.userData.anchor = anchorCube;
-    //
-    //     // Create anchor for ring (90° X)
-    //     const qx = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI/2, 0, 0));
-    //     const tRing = new XRRigidTransform(
-    //       { x: ring.position.x, y: ring.position.y, z: ring.position.z, w: 1 },
-    //       { x: qx.x, y: qx.y, z: qx.z, w: qx.w }
-    //     );
-    //     const anchorRing = await frame.createAnchor(tRing, xrRefSpace);
-    //     ring.userData.anchor = anchorRing;
-    //   }
-    // }
-  });
-
-  renderer.xr.setAnimationLoop((time, frame) => {
-    // Small animation just to prove world-locking
+  // Render loop
+  renderer.setAnimationLoop((_time, frame) => {
+    // Tiny animation to prove world-locking
     ring.rotation.z += 0.01;
-
-    // If using anchors, drive object transforms from anchor spaces:
-    if (frame && xrRefSpace) {
-      for (const obj of [cube, ring]) {
-        const anchor = obj.userData.anchor;
-        if (anchor) {
-          const pose = frame.getPose(anchor.anchorSpace, xrRefSpace);
-          if (pose) {
-            // Update object from 4x4 matrix
-            obj.matrix.fromArray(pose.transform.matrix);
-            obj.matrix.decompose(obj.position, obj.quaternion, obj.scale);
-            obj.matrixAutoUpdate = false;
-          }
-        }
-      }
-    }
-
     renderer.render(scene, camera);
   });
 
