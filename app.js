@@ -120,10 +120,6 @@ function startAR() {
   if (arAvailable && isAndroidChrome()) {
     startAR();
     
-    /*debugging in a way that's visible to mobile phone*/
-    window.prompt("renderer.xr status:" + renderer.xr.enabled);
-    window.prompt("scene status status:" + scene);
-    
   } else {
     startDesktopPreview();
   }
@@ -136,5 +132,6 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
