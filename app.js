@@ -119,10 +119,8 @@ function startAR() {
   // We only start real AR on Android Chrome where it’s actually usable.
   if (arAvailable && isAndroidChrome()) {
     startAR();
-    
   } else {
     startDesktopPreview();
-    console.log("AAARRRRRRRGGGGGGGHHHHHHH!!!!!!!!!!!!!" + controls.enableDamping);
   }
 })();
 
@@ -133,6 +131,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
