@@ -1,10 +1,11 @@
 
 import * as THREE from 'three';
-import { OrbitControls } from './OrbitControls.js';
-import { ARButton } from './ARButton.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { ARButton } from 'three/addons/webxr/ARButton.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const msg = document.getElementById('msg');   // ✅ make sure this exists in HTML
-document.getElementById('hud').textContent = "LISTEN UP FUCKO!!!!! NOWS AIN'T THE TIME FOR QUITING, BUT FOR GREATNESS!!!!!!!!!";   // ✅ make sure this exists in HTML
+const msg = document.getElementById('msg');
+document.getElementById('hud').textContent = "LISTEN UP FUCKO!!!!! NOWS AIN'T THE TIME FOR QUITING, BUT FOR GREATNESS!!!!!!!!!";
 
 console.log("Three.js version:", THREE.REVISION);
 
@@ -51,6 +52,23 @@ const sun = new THREE.DirectionalLight(0xffffff, 0.7);
 sun.position.set(1, 2, 1);
 scene.add(sun);
 
+// ---------- GLTFloader setup ----------
+const loader = new GLTFLoader();
+
+function loadModel(url, position = [0,0,0], scale = 1, rotation = [0,0,0], onLoad = null, scene_to_use=scene) {
+  return new Promise((resolve, reject) => {
+    loader.load(url, (gltf) => {
+      const model = gltf.scene;
+      model.position.set(...position);
+      model.rotation.set(...rotation);
+      typeof scale === 'number' ? model.scale.set(scale, scale, scale) : model.scale.set(...scale);
+      scene_to_use.add(model);
+      onLoad && onLoad(model);
+      resolve(model);
+    }, undefined, reject);
+  });
+}
+
 // Content (same transforms in both modes)
 function box(size, color) {
   return new THREE.Mesh(
@@ -65,6 +83,7 @@ function torus(R, r, color) {
   );
 }
 
+// Creating Content
 const cube = box(0.2, 0x00ffff);
 cube.position.set(0, 0.2, -1.0);
 cube.rotation.set(0, Math.PI / 4, 0);
@@ -78,6 +97,12 @@ scene.add(ring);
 function animateCommon() {
   ring.rotation.z += 0.01;
 }
+
+// Loading Models
+
+const astronaut_modelurl = `./Models/Astronaut.glb`;
+
+loadModel(astronaut_modelurl, [12,12,0], 5, [0.785,0,1.57])
 
 // ---------- Desktop fallback ----------
 let controls = null;
@@ -134,7 +159,6 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
-
 
 
 
