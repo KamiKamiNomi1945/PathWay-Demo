@@ -1,0 +1,33 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  color: #fff;
+  font: 14px system-ui, sans-serif;
+}
+
+canvas { display: block; }
+
+#hud {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  padding: 8px 10px;
+  background: #000;
+  border: 1px solid #333;
+  border-radius: 8px;
+  z-index: 20;
+}
+
+#msg {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  z-index: 30;           /* ensure it’s above the canvas */
+}
+#msg.hide { display: none; }
