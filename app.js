@@ -1,7 +1,7 @@
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { ARButton } from 'three/addons/webxr/ARButton.js';
+import { OrbitControls } from './OrbitControls.js';
+import { ARButton } from './ARButton.js';
 
 const msg = document.getElementById('msg');   // ✅ make sure this exists in HTML
 document.getElementById('hud').textContent = "LISTEN UP FUCKO!!!!! NOWS AIN'T THE TIME FOR QUITING, BUT FOR GREATNESS!!!!!!!!!";   // ✅ make sure this exists in HTML
@@ -134,6 +134,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
