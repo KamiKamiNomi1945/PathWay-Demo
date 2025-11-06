@@ -1,6 +1,6 @@
 
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as THREE from './three.module.js';
+import { OrbitControls } from './OrbitControls.js';
 
 console.log("Three.js version:", THREE.REVISION);
 
@@ -131,3 +131,4 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
