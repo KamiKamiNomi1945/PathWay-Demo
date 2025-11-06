@@ -1,6 +1,10 @@
 
-import * as THREE from './three.module.js';
-import { OrbitControls } from './OrbitControls.js';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { ARButton } from 'three/addons/webxr/ARButton.js';
+
+const msg = document.getElementById('msg');   // ✅ make sure this exists in HTML
+document.getElementById('hud').textContent = "LISTEN UP FUCKO!!!!! NOWS AIN'T THE TIME FOR QUITING, BUT FOR GREATNESS!!!!!!!!!";   // ✅ make sure this exists in HTML
 
 console.log("Three.js version:", THREE.REVISION);
 
@@ -38,6 +42,7 @@ scene.add(camera);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);            // ✅ transparent for camera feed
 document.body.appendChild(renderer.domElement);
 
 // Lights
@@ -64,8 +69,6 @@ const cube = box(0.2, 0x00ffff);
 cube.position.set(0, 0.2, -1.0);
 cube.rotation.set(0, Math.PI / 4, 0);
 scene.add(cube);
-
-document.getElementById("hud").textContent = "LISTEN UP FUCKO!!!!";
 
 const ring = torus(0.15, 0.05, 0xff0088);
 ring.position.set(-1.5, 0.4, -2.0);
@@ -131,7 +134,6 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
-
 
 
 
