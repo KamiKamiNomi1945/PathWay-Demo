@@ -122,6 +122,7 @@ function startAR() {
     
   } else {
     startDesktopPreview();
+    console.log("AAARRRRRRRGGGGGGGHHHHHHH!!!!!!!!!!!!!" + controls.enableDamping);
   }
 })();
 
@@ -132,6 +133,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
