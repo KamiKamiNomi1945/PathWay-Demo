@@ -100,7 +100,7 @@ function animateCommon() {
 
 // Loading Models
 
-const astronaut_modelurl = `./Models/Astronaut.glb`;
+const astronaut_modelurl = `./Astronaut.glb`;
 
 loadModel(astronaut_modelurl, [12,12,0], 5, [0.785,0,1.57])
 
@@ -159,6 +159,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
