@@ -1,8 +1,8 @@
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { ARButton } from 'three/addons/webxr/ARButton.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from './OrbitControls.js';
+import { ARButton } from './ARButton.js';
+import { GLTFLoader } from './GLTFLoader.js';
 
 const msg = document.getElementById('msg');
 document.getElementById('hud').textContent = "LISTEN UP FUCKO!!!!! NOWS AIN'T THE TIME FOR QUITING, BUT FOR GREATNESS!!!!!!!!!";
@@ -159,6 +159,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
