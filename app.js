@@ -120,7 +120,6 @@ cube_7.rotation.set(0, Math.PI / 4, 0);
 scene.add(cube_7);
 
 function animateCommon() {
-  ring.rotation.z += 0.01;
 }
 
 // Loading Models
@@ -184,6 +183,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
