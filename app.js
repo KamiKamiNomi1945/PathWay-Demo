@@ -84,15 +84,40 @@ function torus(R, r, color) {
 }
 
 // Creating Content
-const cube = box(0.2, 0x00ffff);
-cube.position.set(0, 0.2, -1.0);
-cube.rotation.set(0, Math.PI / 4, 0);
-scene.add(cube);
+const cube_1 = box(0.2, 0x00ffff);
+cube_1.position.set(0, 0.2, -1.0);
+cube_1.rotation.set(0, Math.PI / 4, 0);
+scene.add(cube_1);
 
-const ring = torus(0.15, 0.05, 0xff0088);
-ring.position.set(-1.5, 0.4, -2.0);
-ring.rotation.set(Math.PI / 2, 0, 0);
-scene.add(ring);
+const cube_2 = box(0.2, 0x00ffff);
+cube_2.position.set(0, 0.2, -2.0);
+cube_2.rotation.set(0, Math.PI / 4, 0);
+scene.add(cube_2);
+
+const cube_3 = box(0.2, 0x00ffff);
+cube_3.position.set(0, 0.2, -3.0);
+cube_3.rotation.set(0, Math.PI / 4, 0);
+scene.add(cube_3);
+
+const cube_4 = box(0.2, 0x00ffff);
+cube_4.position.set(0, 0.2, -4.0);
+cube_4.rotation.set(0, Math.PI / 4, 0);
+scene.add(cube_4);
+
+const cube_5 = box(0.2, 0x00ffff);
+cube_5.position.set(0, 0.2, -5.0);
+cube_5.rotation.set(0, Math.PI / 4, 0);
+scene.add(cube_5);
+
+const cube_6 = box(0.2, 0x00ffff);
+cube_6.position.set(0, 0.2, -6.0);
+cube_6.rotation.set(0, Math.PI / 4, 0);
+scene.add(cube_6);
+
+const cube_7 = box(0.5, 0x00ffff);
+cube_7.position.set(0, 0.5, -12.0);
+cube_7.rotation.set(0, Math.PI / 4, 0);
+scene.add(cube_7);
 
 function animateCommon() {
   ring.rotation.z += 0.01;
@@ -159,6 +184,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
