@@ -254,10 +254,7 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
 });
 
-
-
-
-// Loading Models
+/*
 const astronaut_modelurl = `./Astronaut.glb`;
 
 let amount = 4;
@@ -271,6 +268,12 @@ for (let i = 0; i < amount; i++) {
     queueAnchor: true   // turn true if you want an anchor per instance
   });
 }
+*/
 
-
-
+// Loading Models
+const arrow_modelurl = `./Arrow.glb`;
+await spawnModel(arrow_modelurl, {
+    position: new THREE.Vector3(0, 0, 0),
+    scale: 1,
+    queueAnchor: true   // turn true if you want an anchor per instance
+  });
