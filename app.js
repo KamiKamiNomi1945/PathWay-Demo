@@ -272,8 +272,29 @@ for (let i = 0; i < amount; i++) {
 
 // Loading Models
 const arrow_modelurl = `./Arrow.glb`;
+
 await spawnModel(arrow_modelurl, {
-    position: new THREE.Vector3(0, 0, 0),
-    scale: 1,
-    queueAnchor: true   // turn true if you want an anchor per instance
-  });
+  position: new THREE.Vector3(-2, -0.3, 0),
+  rotation: [0, 0, Math.PI()/2],
+  scale: 0.5,
+  queueAnchor: true   // turn true if you want an anchor per instance
+});
+await spawnModel(arrow_modelurl, {
+  position: new THREE.Vector3(-2, -0.3, 4.5),
+  rotation: [-Math.PI()/2, 0, Math.PI()/2],
+  scale: 0.5,
+  queueAnchor: true   // turn true if you want an anchor per instance
+});
+await spawnModel(arrow_modelurl, {
+  position: new THREE.Vector3(-7.5, -0.3, 4.5),
+  rotation: [0, 0, Math.PI()/2],
+  scale: 0.5,
+  queueAnchor: true   // turn true if you want an anchor per instance
+});
+await spawnModel(arrow_modelurl, {
+  position: new THREE.Vector3(-7.5, -0.3, 4.5),
+  rotation: [Math.PI()/2, 0, Math.PI()/2],
+  scale: 0.5,
+  queueAnchor: true   // turn true if you want an anchor per instance
+});
+
