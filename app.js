@@ -275,27 +275,28 @@ const arrow_modelurl = `./Arrow.glb`;
 
 await spawnModel(arrow_modelurl, {
   position: [-2, -0.3, 0],
-  rotation: [0, 0, Math.PI()/2],
+  rotation: [0, 0, Math.PI/2],
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
 await spawnModel(arrow_modelurl, {
   position: [-2, -0.3, 4.5],
-  rotation: [-Math.PI()/2, 0, Math.PI()/2],
+  rotation: [-Math.PI/2, 0, Math.PI/2],
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
 await spawnModel(arrow_modelurl, {
   position: [-7.5, -0.3, 4.5],
-  rotation: [0, 0, Math.PI()/2],
+  rotation: [0, 0, Math.PI/2],
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
 await spawnModel(arrow_modelurl, {
   position: [-7.5, -0.3, 4.5],
-  rotation: [Math.PI()/2, 0, Math.PI()/2],
+  rotation: [Math.PI/2, 0, Math.PI/2],
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
+
 
 
