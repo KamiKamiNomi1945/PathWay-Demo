@@ -1,17 +1,21 @@
+// Importing modules into the app file
+import * as THREE from 'three'; // Core module
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // For desktop preview
+import { ARButton } from 'three/addons/webxr/ARButton.js'; // Staring the AR session on mobile with AR support
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'; // Loading in proper models
+import { clone } from 'three/addons/utils/SkeletonUtils.js'; // Loading in model cloning module
 
-import * as THREE from 'three';
-import { OrbitControls } from './OrbitControls.js';
-import { ARButton } from './ARButton.js';
-import { GLTFLoader } from './GLTFLoader.js';
+// Defining xrREFSpace in global scope
+let xrRefSpace = null;
 
+// Getting the text boxes from the html file.
 const msg = document.getElementById('msg');
 document.getElementById('hud').textContent = "LISTEN UP FUCKO!!!!! NOWS AIN'T THE TIME FOR QUITING, BUT FOR GREATNESS!!!!!!!!!";
-
 console.log("Three.js version:", THREE.REVISION);
 
 
 // ---------- Helpers ----------
-function showMessage(text, lingerMs = 2200) {
+function showMessage(text, lingerMs = 2200) { // Using the msg text to display a message
   msg.textContent = text;
   msg.classList.remove('hide');
   if (lingerMs > 0) {
@@ -19,13 +23,13 @@ function showMessage(text, lingerMs = 2200) {
   }
 }
 
-function isAndroidChrome() {
+function isAndroidChrome() { // Checking if the device is an Android and has Chrome
   const ua = navigator.userAgent;
   // Basic filter: Android + Chrome (not Edge/OPR)
   return /Android/i.test(ua) && /Chrome\/\d+/.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua);
 }
 
-async function supportsImmersiveAR() {
+async function supportsImmersiveAR() { // Checks if the device supports AR
   if (!('xr' in navigator)) return false;
   try {
     return await navigator.xr.isSessionSupported('immersive-ar');
@@ -43,7 +47,7 @@ scene.add(camera);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x000000, 0);            // ✅ transparent for camera feed
+renderer.setClearColor(0x000000, 0);
 document.body.appendChild(renderer.domElement);
 
 // Lights
@@ -54,19 +58,119 @@ scene.add(sun);
 
 // ---------- GLTFloader setup ----------
 const loader = new GLTFLoader();
+const TEMPLATE_CACHE = new Map(); // url -> Object3D template
 
-function loadModel(url, position = [0,0,0], scale = 1, rotation = [0,0,0], onLoad = null, scene_to_use=scene) {
-  return new Promise((resolve, reject) => {
-    loader.load(url, (gltf) => {
-      const model = gltf.scene;
-      model.position.set(...position);
-      model.rotation.set(...rotation);
-      typeof scale === 'number' ? model.scale.set(scale, scale, scale) : model.scale.set(...scale);
-      scene_to_use.add(model);
-      onLoad && onLoad(model);
-      resolve(model);
-    }, undefined, reject);
+async function preloadModel(url) {
+  if (TEMPLATE_CACHE.has(url)) return TEMPLATE_CACHE.get(url);
+  const gltf = await loader.loadAsync(url);
+  const template = gltf.scene;
+  TEMPLATE_CACHE.set(url, template);
+  return template;
+}
+
+async function spawnModel(url, {
+  position     = [0, 0, 0],
+  worldPos     = null,
+  rotation     = [0, 0, 0],
+  scale        = 1,
+  queueAnchor  = false,
+  scene_to_use = scene,
+  onLoad       = null,
+} = {}) {
+  // 1) get (or build) the template once
+  const template = await preloadModel(url);
+
+  // 2) deep clone so the instance is independent (works with skins/animations)
+  const model = clone(template);
+
+  // 3) per-instance transform
+  if (worldPos) model.position.copy(toLocal(worldPos));
+  else          model.position.set(...position);
+
+  model.rotation.set(...rotation);
+  if (typeof scale === 'number') model.scale.set(scale, scale, scale);
+  else                           model.scale.set(...scale);
+
+  // 4) add + register (so your anchor/recenter code sees it)
+  scene_to_use.add(model);
+  registerWorldObject(model, { queueAnchor, worldPos });
+
+  onLoad && onLoad(model);
+  return model;
+}
+
+// ---------- Anchor and stability setup ----------
+let worldOrigin = new THREE.Vector3();           // meters, keeps “big” world coords small
+const worldObjects = new Set();                  // every object you manage
+
+function toLocal(worldPos) {
+  return new THREE.Vector3().copy(worldPos).sub(worldOrigin);
+}
+
+function maybeRecenter(frame) {
+  const pose = frame.getViewerPose(xrRefSpace);
+  if (!pose) return;
+  const m = new THREE.Matrix4().fromArray(pose.views[0].transform.matrix);
+  const cam = new THREE.Vector3().setFromMatrixPosition(m);
+
+  const MAX = 20; // meters
+  if (cam.distanceTo(worldOrigin) > MAX) {
+    const shift = cam.clone().sub(worldOrigin);
+    worldOrigin.add(shift);
+    // keep visuals stable: subtract the shift from every object’s local position
+    worldObjects.forEach(obj => obj.position.sub(shift));
+    // shift XR reference space too (so future poses align with new local frame)
+    xrRefSpace = xrRefSpace.getOffsetReferenceSpace(
+      new XRRigidTransform({ x: -shift.x, y: -shift.y, z: -shift.z })
+    );
+  }
+}
+
+const pendingAnchors = []; // items: { obj }
+
+function requestAnchorFor(obj) { pendingAnchors.push({ obj }); }
+
+function processAnchorRequests(frame) {
+  if (!('createAnchor' in XRFrame.prototype) || !xrRefSpace) return;
+  while (pendingAnchors.length) {
+    const { obj } = pendingAnchors.shift();
+
+    // build a rigid transform from the object’s current world pose
+    obj.updateWorldMatrix(true, false);
+    const pos = new THREE.Vector3(), rot = new THREE.Quaternion(), scl = new THREE.Vector3();
+    obj.matrixWorld.decompose(pos, rot, scl);
+
+    const t = new XRRigidTransform(
+      { x: pos.x, y: pos.y, z: pos.z, w: 1 },
+      { x: rot.x, y: rot.y, z: rot.z, w: rot.w }
+    );
+
+    frame.createAnchor(t, xrRefSpace).then(anchor => {
+      obj.userData.anchor = anchor;
+      obj.matrixAutoUpdate = false; // from now on we drive it from anchor pose
+    }).catch(err => console.warn('Anchor failed:', err));
+  }
+}
+
+function updateAnchoredObjects(frame) {
+  if (!xrRefSpace) return;
+  worldObjects.forEach(obj => {
+    const a = obj.userData.anchor;
+    if (!a) return;
+    const pose = frame.getPose(a.anchorSpace, xrRefSpace);
+    if (!pose) return;
+    obj.matrix.fromArray(pose.transform.matrix);
+    obj.matrix.decompose(obj.position, obj.quaternion, obj.scale);
   });
+}
+
+// Register an object for world-locking (drift control + optional anchor)
+function registerWorldObject(obj, { worldPos = null, queueAnchor = false } = {}) {
+  // If you pass a world position, convert it to local right away
+  if (worldPos) obj.position.copy(toLocal(worldPos));
+  worldObjects.add(obj);
+  if (queueAnchor) requestAnchorFor(obj);
+  return obj;
 }
 
 // Content (same transforms in both modes)
@@ -83,50 +187,18 @@ function torus(R, r, color) {
   );
 }
 
-// Creating Content
-const cube_1 = box(0.2, 0x00ffff);
-cube_1.position.set(0, 0.2, -1.0);
-cube_1.rotation.set(0, Math.PI / 4, 0);
-scene.add(cube_1);
-
-const cube_2 = box(0.2, 0x00ffff);
-cube_2.position.set(0, 0.2, -2.0);
-cube_2.rotation.set(0, Math.PI / 4, 0);
-scene.add(cube_2);
-
-const cube_3 = box(0.2, 0x00ffff);
-cube_3.position.set(0, 0.2, -3.0);
-cube_3.rotation.set(0, Math.PI / 4, 0);
-scene.add(cube_3);
-
-const cube_4 = box(0.2, 0x00ffff);
-cube_4.position.set(0, 0.2, -4.0);
-cube_4.rotation.set(0, Math.PI / 4, 0);
-scene.add(cube_4);
-
-const cube_5 = box(0.2, 0x00ffff);
-cube_5.position.set(0, 0.2, -5.0);
-cube_5.rotation.set(0, Math.PI / 4, 0);
-scene.add(cube_5);
-
-const cube_6 = box(0.2, 0x00ffff);
-cube_6.position.set(0, 0.2, -6.0);
-cube_6.rotation.set(0, Math.PI / 4, 0);
-scene.add(cube_6);
-
-const cube_7 = box(0.5, 0x00ffff);
-cube_7.position.set(0, 0.5, -12.0);
-cube_7.rotation.set(0, Math.PI / 4, 0);
-scene.add(cube_7);
-
-function animateCommon() {
-}
-
 // Loading Models
+const astronaut_modelurl = `./Models/Astronaut.glb`;
 
-const astronaut_modelurl = `./Astronaut.glb`;
-
-loadModel(astronaut_modelurl, [12,12,0], 5, [0.785,0,1.57])
+let max = 40
+let inc = 0.5
+for (let i = 0; i < max; i++) {
+  await spawnModel(astronaut_modelurl, {
+    position: [i * inc - inc*max/2, Math.cos(i*Math.PI/3), Math.sin(i*Math.PI/3)],
+    scale: 0.2,
+    queueAnchor: true   // turn true if you want an anchor per instance
+  });
+}
 
 // ---------- Desktop fallback ----------
 let controls = null;
@@ -142,7 +214,6 @@ function startDesktopPreview() {
   showMessage('AR not supported here. Running desktop preview (orbit).');
 
   const loop = () => {
-    animateCommon();
     controls.update();
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
@@ -155,11 +226,23 @@ function startAR() {
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType('local-floor');
 
-  const sessionInit = { requiredFeatures: ['local-floor'] };
+  const sessionInit = { requiredFeatures: ['local-floor'], optionalFeatures: ['anchors'] };
   document.body.appendChild(ARButton.createButton(renderer, sessionInit));
 
-  renderer.setAnimationLoop((_t, _frame) => {
-    animateCommon();
+  // IMPORTANT: set the GLOBAL xrRefSpace (no 'let' here)
+  renderer.xr.addEventListener('sessionstart', () => {
+    xrRefSpace = renderer.xr.getReferenceSpace();
+  });
+
+  renderer.setAnimationLoop((_t, frame) => {
+    if (frame) {
+      // keep local coordinates small
+      maybeRecenter(frame);
+      // create anchors for newly registered objects
+      processAnchorRequests(frame);
+      // drive anchored objects from their poses
+      updateAnchoredObjects(frame);
+    }
     renderer.render(scene, camera);
   });
 }
@@ -183,10 +266,6 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
-
-
-
-
 
 
 
