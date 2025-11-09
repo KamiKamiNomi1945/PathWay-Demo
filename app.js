@@ -266,9 +266,10 @@ let height_per_astronaut = 1;
 let width_per_astronaut = 1.2;
 for (let i = 0; i < amount; i++) {
   await spawnModel(astronaut_modelurl, {
-    worldPos: new THREE.Vector3(i * length_per_astronaut - length_per_astronaut*amount/2, height_per_astronaut * Math.cos(i*Math.PI/3), width_per_astronaut * Math.sin(i*Math.PI/3) + width_per_astronaut * 1.5*Math.sin(i*Math.PI/5)),
+    position: new THREE.Vector3(i * length_per_astronaut - length_per_astronaut*amount/2, height_per_astronaut * Math.cos(i*Math.PI/3), width_per_astronaut * Math.sin(i*Math.PI/3) + width_per_astronaut * 1.5*Math.sin(i*Math.PI/5)),
     scale: 0.2,
     queueAnchor: true   // turn true if you want an anchor per instance
   });
 }
+
 
