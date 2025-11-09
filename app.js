@@ -1,9 +1,9 @@
 // Importing modules into the app file
 import * as THREE from 'three'; // Core module
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // For desktop preview
-import { ARButton } from 'three/addons/webxr/ARButton.js'; // Staring the AR session on mobile with AR support
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'; // Loading in proper models
-import { clone } from 'three/addons/utils/SkeletonUtils.js'; // Loading in model cloning module
+import { OrbitControls } from './OrbitControls.js'; // For desktop preview
+import { ARButton } from './ARButton.js'; // Staring the AR session on mobile with AR support
+import { GLTFLoader } from './GLTFLoader.js'; // Loading in proper models
+import { clone } from './SkeletonUtils.js'; // Loading in model cloning module
 
 // Defining xrREFSpace in global scope
 let xrRefSpace = null;
@@ -266,6 +266,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
