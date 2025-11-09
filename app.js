@@ -188,7 +188,7 @@ function torus(R, r, color) {
 }
 
 // Loading Models
-const astronaut_modelurl = `./Models/Astronaut.glb`;
+const astronaut_modelurl = `./Astronaut.glb`;
 
 let max = 40
 let inc = 0.5
@@ -266,6 +266,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
