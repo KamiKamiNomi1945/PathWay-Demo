@@ -194,7 +194,7 @@ let max = 40
 let inc = 0.5
 for (let i = 0; i < max; i++) {
   await spawnModel(astronaut_modelurl, {
-    position: [i * inc - inc*max/2, Math.cos(i*Math.PI/3), Math.sin(i*Math.PI/3)],
+    worldpos: [i * inc - inc*max/2, Math.cos(i*Math.PI/3), Math.sin(i*Math.PI/3)],
     scale: 0.2,
     queueAnchor: true   // turn true if you want an anchor per instance
   });
@@ -266,6 +266,7 @@ window.addEventListener('resize', () => {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 });
+
 
 
 
