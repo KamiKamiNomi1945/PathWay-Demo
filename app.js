@@ -260,10 +260,10 @@ window.addEventListener('resize', () => {
 // Loading Models
 const astronaut_modelurl = `./Astronaut.glb`;
 
-let amount = 40;
-let length_per_astronaut = 6;
-let height_per_astronaut = 1;
-let width_per_astronaut = 1.2;
+let amount = 4;
+let length_per_astronaut = 3;
+let height_per_astronaut = 2;
+let width_per_astronaut = 2;
 for (let i = 0; i < amount; i++) {
   await spawnModel(astronaut_modelurl, {
     position: new THREE.Vector3(i * length_per_astronaut - length_per_astronaut*amount/2, height_per_astronaut * Math.cos(i*Math.PI/3), width_per_astronaut * Math.sin(i*Math.PI/3) + width_per_astronaut * 1.5*Math.sin(i*Math.PI/5)),
@@ -271,5 +271,6 @@ for (let i = 0; i < amount; i++) {
     queueAnchor: true   // turn true if you want an anchor per instance
   });
 }
+
 
 
