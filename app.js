@@ -274,29 +274,30 @@ for (let i = 0; i < amount; i++) {
 const arrow_modelurl = `./Arrow.glb`;
 
 await spawnModel(arrow_modelurl, {
-  position: [-4, -0.3, 0],
+  position: [2, -0.3, 4],
   rotation: [0, 0, 3.1415/2],
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
 await spawnModel(arrow_modelurl, {
-  position: [-4, -0.3, -11],
+  position: [6, -0.3, 4],
   rotation: [0, -3.1415/2, 3.1415/2],
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
 await spawnModel(arrow_modelurl, {
-  position: [13, -0.3, -11],
+  position: [10, -0.3, 4],
   rotation: [0, 3.1415, 3.1415/2],
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
 await spawnModel(arrow_modelurl, {
-  position: [13, -0.3, -7],
+  position: [14, -0.3, 4],
   rotation: [-3.1415/4, 3.1415/2, 3.1415/2],
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
+
 
 
 
