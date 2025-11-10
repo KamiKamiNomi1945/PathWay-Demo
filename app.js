@@ -10,7 +10,7 @@ let xrRefSpace = null;
 
 // Getting the text boxes from the html file.
 const msg = document.getElementById('msg');
-document.getElementById('hud').textContent = "LISTEN UP FUCKO!!!!! NOWS AIN'T THE TIME FOR QUITING, BUT FOR GREATNESS!!!!!!!!!";
+document.getElementById('hud').textContent = "";
 console.log("Three.js version:", THREE.REVISION);
 
 
@@ -297,6 +297,7 @@ await spawnModel(arrow_modelurl, {
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
+
 
 
 
