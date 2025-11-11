@@ -304,6 +304,12 @@ await spawnModel(arrow_modelurl, {
   queueAnchor: true   // turn true if you want an anchor per instance
 });
 await spawnModel(arrow_modelurl, {
+  position: [40, -0.3, -5],
+  rotation: [0, -3.1415/2, 3.1415/2],
+  scale: 0.5,
+  queueAnchor: true   // turn true if you want an anchor per instance
+});
+await spawnModel(arrow_modelurl, {
   position: [40, -0.3, -10],
   rotation: [0, -3.1415/2, 3.1415/2],
   scale: 0.5,
@@ -315,6 +321,7 @@ await spawnModel(arrow_modelurl, {
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
+
 
 
 
