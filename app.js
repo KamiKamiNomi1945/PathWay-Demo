@@ -317,7 +317,8 @@ await spawnModel(arrow_modelurl, {
 });
 await spawnModel(arrow_modelurl, {
   position: [48, -0.3, -8],
-  rotation: [0, 3.1415/2, -3.1415/4],
+  rotation: [3.1415/4, 3.1415/2, -3.1415/2],
   scale: 0.5,
   queueAnchor: true   // turn true if you want an anchor per instance
 });
+
